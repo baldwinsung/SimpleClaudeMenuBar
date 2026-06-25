@@ -7,7 +7,7 @@ cask "simpleclaudemenubar" do
   desc "Menu bar app showing Claude Code session usage and reset time"
   homepage "https://github.com/baldwinsung/SimpleClaudeMenuBar"
 
-  depends_on macos: ">= :ventura"
+  depends_on macos: :ventura
 
   app "SimpleClaudeMenuBar.app"
 
