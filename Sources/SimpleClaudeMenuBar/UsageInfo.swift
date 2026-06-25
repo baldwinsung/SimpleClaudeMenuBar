@@ -44,12 +44,23 @@ enum UsageParser {
         return nil
     }
 
-    /// "... at 9:59pm ..." -> "9:59p"
+    /// "... at 9:59pm ..." -> "9:59p"; "... at 10pm ..." -> "10p"
     private static func shortTime(in s: String) -> String? {
-        guard let r = firstMatch(in: s, pattern: #"(\d{1,2}:\d{2})\s*([ap])m"#, groups: 2) else {
-            return nil
+        // Optional minutes so on-the-hour times ("10pm") also match.
+        guard let re = try? NSRegularExpression(
+            pattern: #"(\d{1,2})(?::(\d{2}))?\s*([ap])m"#, options: [.caseInsensitive]
+        ) else { return nil }
+        let range = NSRange(s.startIndex..., in: s)
+        guard let m = re.firstMatch(in: s, range: range) else { return nil }
+
+        func group(_ i: Int) -> String? {
+            Range(m.range(at: i), in: s).map { String(s[$0]) }
         }
-        return "\(r[0])\(r[1])"
+        guard let hour = group(1), let ap = group(3)?.lowercased() else { return nil }
+        if let minutes = group(2) {
+            return "\(hour):\(minutes)\(ap)"
+        }
+        return "\(hour)\(ap)"
     }
 
     // MARK: - Regex helpers

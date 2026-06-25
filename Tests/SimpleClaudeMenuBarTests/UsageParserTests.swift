@@ -37,4 +37,12 @@ final class UsageParserTests: XCTestCase {
         XCTAssertEqual(s?.percent, 5)
         XCTAssertEqual(s?.resetShort, "10:30a")
     }
+
+    func testHandlesOnTheHourTime() {
+        let line = "Current session: 86% used · resets Jun 25 at 10pm (America/New_York)"
+        let s = UsageParser.parse(line).session
+        XCTAssertEqual(s?.percent, 86)
+        XCTAssertEqual(s?.resetFull, "Jun 25 at 10pm")
+        XCTAssertEqual(s?.resetShort, "10p")
+    }
 }

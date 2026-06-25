@@ -34,8 +34,14 @@ Current week (all models): 73% used · resets Jun 28 at 1:59pm (America/New_York
 ```
 
 No API keys, no scraping — it just reads the same numbers `/usage` shows you.
-The command runs through a login shell (`/bin/zsh -lc`) so your `PATH` (e.g.
-Homebrew) is loaded even though a `.app` launches with a minimal environment.
+The `claude` binary is invoked directly (resolved from common install paths, or
+the `claudePath` default) from a temp directory — **not** via a login shell — so
+it doesn't source your shell rc files or touch protected folders, avoiding macOS
+privacy prompts. If `claude` lives somewhere unusual, point the app at it:
+
+```sh
+defaults write com.baldwinsung.SimpleClaudeMenuBar claudePath /path/to/claude
+```
 
 > **Note:** each refresh is itself a small `claude` invocation, so it adds
 > slightly to your own request count. The interval is configurable.

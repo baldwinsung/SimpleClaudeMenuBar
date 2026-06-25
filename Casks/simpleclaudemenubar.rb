@@ -1,6 +1,6 @@
 cask "simpleclaudemenubar" do
-  version "0.1.0"
-  sha256 "7cfe616f6753de23e62a15d476ea1ab3a3f11b3786f9eacdc1289b342adaba47"
+  version "0.1.1"
+  sha256 "2920ff09e71e4436874a2068e7955be6783deabb053cbbddbb404a75cfb27f0c"
 
   url "https://github.com/baldwinsung/SimpleClaudeMenuBar/releases/download/v#{version}/SimpleClaudeMenuBar-#{version}.zip"
   name "SimpleClaudeMenuBar"
