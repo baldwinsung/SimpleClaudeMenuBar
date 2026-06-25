@@ -52,6 +52,17 @@ only in the menu bar (no Dock icon).
 > Requires the [`claude`](https://docs.claude.com/en/docs/claude-code) CLI on
 > your `PATH` and macOS 13 (Ventura) or later.
 
+### Unsigned builds
+
+Releases are currently **not notarized** (no Apple Developer ID yet), so on
+first launch macOS may say the app "cannot be opened." Open it once via either:
+
+- Right-click the app in `/Applications` ▸ **Open** ▸ confirm, or
+- `xattr -dr com.apple.quarantine "/Applications/SimpleClaudeMenuBar.app"`
+
+After that it launches normally. (Notarization will remove this step; see
+`scripts/release.sh`.)
+
 ## Build from source
 
 Requires Xcode 15+ / a recent Swift toolchain.
