@@ -27,13 +27,13 @@ final class UsageModel: ObservableObject {
         Task { await refresh() }
     }
 
-    /// Title shown in the menu bar, e.g. "22% · 9:59p".
+    /// Title shown in the menu bar, e.g. "22% used · 9:59p".
     var menuBarTitle: String {
         if let s = snapshot.session {
-            return "\(s.percent)% · \(s.resetShort)"
+            return "\(s.percent)% used · \(s.resetShort)"
         }
-        if lastError != nil { return "Claude ⚠" }
-        return "Claude …"
+        if lastError != nil { return "⚠" }
+        return "…"
     }
 
     func refresh() async {
