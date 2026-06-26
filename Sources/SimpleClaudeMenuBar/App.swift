@@ -17,6 +17,7 @@ struct SimpleClaudeMenuBarApp: App {
 
 struct MenuContent: View {
     @ObservedObject var model: UsageModel
+    @State private var launchAtLogin = LaunchAtLogin.isEnabled
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -49,12 +50,22 @@ struct MenuContent: View {
                 Picker("", selection: $model.refreshMinutes) {
                     Text("1 min").tag(1)
                     Text("5 min").tag(5)
+                    Text("10 min").tag(10)
                     Text("15 min").tag(15)
                     Text("30 min").tag(30)
                 }
                 .labelsHidden()
                 .frame(width: 90)
             }
+
+            Toggle("Launch at login", isOn: $launchAtLogin)
+                .font(.caption)
+                .toggleStyle(.checkbox)
+                .onChange(of: launchAtLogin) { newValue in
+                    LaunchAtLogin.setEnabled(newValue)
+                    // Reflect the real status in case the change failed.
+                    launchAtLogin = LaunchAtLogin.isEnabled
+                }
 
             HStack {
                 Button(model.isRefreshing ? "Refreshing…" : "Refresh now") {
