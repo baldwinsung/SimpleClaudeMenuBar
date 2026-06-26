@@ -41,23 +41,38 @@ final class UsageModel: ObservableObject {
         isRefreshing = true
         defer { isRefreshing = false }
 
-        let result: Result<String, Error> = await Task.detached(priority: .utility) {
-            do { return .success(try UsageFetcher.run(timeout: 90)) }
-            catch { return .failure(error) }
-        }.value
+        // `claude -p /usage` intermittently omits the "Current session/week"
+        // limit lines (they come from a server-side fetch that occasionally
+        // returns nothing) while still printing the rest of the breakdown.
+        // Retry once before giving up, and never clobber a good snapshot.
+        for attempt in 0..<2 {
+            let result: Result<String, Error> = await Task.detached(priority: .utility) {
+                do { return .success(try UsageFetcher.run(timeout: 90)) }
+                catch { return .failure(error) }
+            }.value
 
-        switch result {
-        case .success(let output):
-            let parsed = UsageParser.parse(output)
-            if parsed.session == nil && parsed.week == nil {
-                lastError = "Couldn't parse /usage output."
-            } else {
-                snapshot = parsed
-                lastUpdated = Date()
-                lastError = nil
+            switch result {
+            case .success(let output):
+                let parsed = UsageParser.parse(output)
+                if parsed.session != nil || parsed.week != nil {
+                    snapshot = parsed
+                    lastUpdated = Date()
+                    lastError = nil
+                    return
+                }
+                // Limit lines were absent — a transient miss. Retry once.
+            case .failure(let error):
+                lastError = error.localizedDescription
+                return
             }
-        case .failure(let error):
-            lastError = error.localizedDescription
+
+            if attempt == 0 { try? await Task.sleep(nanoseconds: 1_500_000_000) }
+        }
+
+        // Both attempts came back without usage limits. Keep showing the last
+        // good snapshot if we have one; only surface an error when we don't.
+        if snapshot.session == nil && snapshot.week == nil {
+            lastError = "Claude didn't return usage limits — try Refresh again."
         }
     }
 
