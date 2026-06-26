@@ -1,5 +1,8 @@
 # SimpleClaudeMenuBar
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![Platform: macOS 13+](https://img.shields.io/badge/Platform-macOS%2013%2B-blue.svg)
+
 A tiny macOS menu bar app that shows your current **Claude Code session usage** and **when it resets**.
 
 > Built with [Claude Code](https://claude.com/claude-code) (Opus).
@@ -13,7 +16,8 @@ gauges for each window:
 
 - **Session** — % used, a progress bar, and reset time
 - **Week** — % used, a progress bar, and reset time (all models)
-- Last updated, refresh interval (1/5/15/30 min), manual refresh, quit
+- Last updated, refresh interval (1/5/10/15/30 min), manual refresh, quit
+- **Launch at login** — a checkbox to start the app automatically when you log in
 
 Gauge colors track how close you are to the limit: **green** under 70%,
 **orange** 70–90%, **red** at 90%+.

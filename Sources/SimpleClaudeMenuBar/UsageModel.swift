@@ -22,7 +22,7 @@ final class UsageModel: ObservableObject {
 
     init() {
         let stored = UserDefaults.standard.integer(forKey: Self.intervalKey)
-        refreshMinutes = stored == 0 ? 5 : max(1, min(stored, 120))
+        refreshMinutes = stored == 0 ? 10 : max(1, min(stored, 120))
         scheduleTimer()
         Task { await refresh() }
     }
