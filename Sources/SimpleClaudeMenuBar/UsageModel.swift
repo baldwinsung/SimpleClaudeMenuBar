@@ -31,6 +31,14 @@ final class UsageModel: ObservableObject {
     private static let intervalKey = "refreshMinutes"
     private var timer: Timer?
 
+    /// Near-term retry used when we have no usable snapshot yet — chiefly at
+    /// login, when the app fires its first fetch before the network is up and
+    /// `claude -p /usage` comes back with no limit lines. Without this we'd sit
+    /// on the error until the next full `refreshMinutes` tick (up to 2 hours).
+    private var retryTask: Task<Void, Never>?
+    private var retryAttempt = 0
+    private let retryBackoff: [TimeInterval] = [5, 15, 30, 60, 120]
+
     init() {
         let stored = UserDefaults.standard.integer(forKey: Self.intervalKey)
         refreshMinutes = stored == 0 ? 10 : max(1, min(stored, 120))
@@ -69,11 +77,13 @@ final class UsageModel: ObservableObject {
                     snapshot = parsed
                     lastUpdated = Date()
                     lastError = nil
+                    clearRetry()
                     return
                 }
                 // Limit lines were absent — a transient miss. Retry once.
             case .failure(let error):
                 lastError = error.localizedDescription
+                scheduleRetry()
                 return
             }
 
@@ -84,7 +94,32 @@ final class UsageModel: ObservableObject {
         // good snapshot if we have one; only surface an error when we don't.
         if snapshot.session == nil && snapshot.week == nil {
             lastError = "Claude didn't return usage limits — try Refresh again."
+            scheduleRetry()
         }
+    }
+
+    /// Queue a backoff retry while we still have nothing to show (e.g. the
+    /// network wasn't ready at login). Cleared as soon as a fetch succeeds; the
+    /// regular `refreshMinutes` timer keeps running independently.
+    private func scheduleRetry() {
+        guard snapshot.session == nil && snapshot.week == nil else {
+            clearRetry()
+            return
+        }
+        let delay = retryBackoff[min(retryAttempt, retryBackoff.count - 1)]
+        retryAttempt += 1
+        retryTask?.cancel()
+        retryTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            guard !Task.isCancelled else { return }
+            await self?.refresh()
+        }
+    }
+
+    private func clearRetry() {
+        retryAttempt = 0
+        retryTask?.cancel()
+        retryTask = nil
     }
 
     private func scheduleTimer() {
