@@ -9,9 +9,20 @@ final class UsageModel: ObservableObject {
     @Published private(set) var isRefreshing = false
 
     /// Minutes between automatic refreshes. Persisted; clamped to a sane range.
+    ///
+    /// The clamp guards against re-entry: assigning to a `@Published` property
+    /// from inside its own `didSet` re-enters the setter (the observer lives on
+    /// the wrapper's computed accessor, so Swift's "don't recurse in didSet"
+    /// rule doesn't apply). An unconditional self-assignment here recurses until
+    /// the stack overflows — the SIGSEGV crash seen on macOS 26. Only re-assign
+    /// when the value is actually out of range, which bottoms out after one hop.
     @Published var refreshMinutes: Int {
         didSet {
-            refreshMinutes = max(1, min(refreshMinutes, 120))
+            let clamped = max(1, min(refreshMinutes, 120))
+            if clamped != refreshMinutes {
+                refreshMinutes = clamped
+                return
+            }
             UserDefaults.standard.set(refreshMinutes, forKey: Self.intervalKey)
             scheduleTimer()
         }
