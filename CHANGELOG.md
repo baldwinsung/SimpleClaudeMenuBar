@@ -2,6 +2,16 @@
 
 All notable changes to SimpleClaudeMenuBar are documented here.
 
+## 0.1.5
+
+- Fix **"Claude didn't return usage limits — try Refresh again"** shown at
+  login. The app fires its first fetch during boot, often before the network is
+  up, so `claude -p /usage` returns no limit lines. It made only two attempts
+  1.5s apart, then sat on the error until the next full refresh (up to 2 hours)
+  or a manual Refresh. It now retries on a short backoff (5s → 15s → 30s → 60s
+  → 120s) while it has no snapshot to show, so it self-heals within seconds of
+  the network coming up. The retry chain clears as soon as a fetch succeeds.
+
 ## 0.1.4
 
 - Fix a **crash when changing the refresh interval** on macOS 26. The
