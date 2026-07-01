@@ -2,6 +2,14 @@
 
 All notable changes to SimpleClaudeMenuBar are documented here.
 
+## 0.1.4
+
+- Fix a **crash when changing the refresh interval** on macOS 26. The
+  `refreshMinutes` clamp re-assigned the property from inside its own `didSet`,
+  which re-enters the `@Published` setter and recurses until the stack
+  overflows (`EXC_BAD_ACCESS`). The clamp now only re-assigns when the value is
+  actually out of range. Recommended for anyone on macOS 26.
+
 ## 0.1.3
 
 - Fix intermittent **"Couldn't parse /usage output"** errors. `claude -p /usage`

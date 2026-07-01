@@ -45,4 +45,19 @@ final class UsageParserTests: XCTestCase {
         XCTAssertEqual(s?.resetFull, "Jun 25 at 10pm")
         XCTAssertEqual(s?.resetShort, "10p")
     }
+
+    /// Regression: assigning `refreshMinutes` used to self-assign inside its own
+    /// `didSet`, which re-enters the `@Published` setter and recurses until the
+    /// stack overflows (the SIGSEGV crash on macOS 26). A crash here fails the
+    /// test; otherwise the value must be clamped to [1, 120].
+    @MainActor
+    func testRefreshMinutesClampsWithoutRecursing() {
+        let model = UsageModel()
+        model.refreshMinutes = 999
+        XCTAssertEqual(model.refreshMinutes, 120)
+        model.refreshMinutes = 0
+        XCTAssertEqual(model.refreshMinutes, 1)
+        model.refreshMinutes = 15
+        XCTAssertEqual(model.refreshMinutes, 15)
+    }
 }
