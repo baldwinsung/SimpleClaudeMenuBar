@@ -2,6 +2,22 @@
 
 All notable changes to SimpleClaudeMenuBar are documented here.
 
+## 0.1.6
+
+- Fix the menu bar getting **stuck on "0% used"**. When `claude -p /usage` is
+  polled too hard its server-side fetch starts answering `0% used` for both
+  windows while real usage is unchanged. The app now rejects a 0/0 reading that
+  arrives while a window it has already seen usage in is still open, keeps the
+  last good numbers, and says so in the popover. Reset times are parsed to an
+  absolute date to make that call, so a genuine 0% after a reset still shows.
+- **Bound the retry backoff.** 0.1.5 repeated its last rung (120s) forever while
+  it had no snapshot, so a bad stretch became a permanent poll every ~2 minutes
+   — which is itself what provokes the empty/zero responses. The ladder now
+  stops after ~18 minutes and hands back to the normal refresh timer; "Refresh
+  now" starts it over.
+- Pin `USER`/`LOGNAME` in the environment passed to `claude`. Without `USER` the
+  CLI silently prints only its cost summary, with no usage lines at all.
+
 ## 0.1.5
 
 - Fix **"Claude didn't return usage limits — try Refresh again"** shown at

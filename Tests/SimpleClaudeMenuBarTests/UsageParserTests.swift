@@ -46,6 +46,70 @@ final class UsageParserTests: XCTestCase {
         XCTAssertEqual(s?.resetShort, "10p")
     }
 
+    func testParsesResetDate() {
+        let line = "Current session: 5% used · resets Jun 26 at 10:30am (America/New_York)"
+        guard let date = UsageParser.parse(line).session?.resetDate else {
+            return XCTFail("no reset date parsed")
+        }
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "America/New_York")!
+        let components = calendar.dateComponents([.month, .day, .hour, .minute], from: date)
+        XCTAssertEqual(components.month, 6)
+        XCTAssertEqual(components.day, 26)
+        XCTAssertEqual(components.hour, 10)
+        XCTAssertEqual(components.minute, 30)
+    }
+
+    func testParsesOnTheHourResetDate() {
+        let line = "Current week (all models): 5% used · resets Aug 23 at 2pm (America/New_York)"
+        guard let date = UsageParser.parse(line).week?.resetDate else {
+            return XCTFail("no reset date parsed")
+        }
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "America/New_York")!
+        let components = calendar.dateComponents([.hour, .minute], from: date)
+        XCTAssertEqual(components.hour, 14)
+        XCTAssertEqual(components.minute, 0)
+    }
+
+    // MARK: - Throttled 0/0 readings
+
+    private func snapshot(session: Int, week: Int, resetIn hours: Double) -> UsageSnapshot {
+        let reset = Date().addingTimeInterval(hours * 3600)
+        return UsageSnapshot(
+            session: UsageLine(percent: session, resetFull: "", resetShort: "", resetDate: reset),
+            week: UsageLine(percent: week, resetFull: "", resetShort: "", resetDate: reset)
+        )
+    }
+
+    func testZeroReadingIsSuspectWhileTheWindowIsStillOpen() {
+        let previous = snapshot(session: 42, week: 5, resetIn: 1)
+        let new = snapshot(session: 0, week: 0, resetIn: 1)
+        XCTAssertTrue(ZeroReadingGuard.isSuspect(new: new, previous: previous))
+    }
+
+    func testZeroReadingIsAcceptedAfterTheWindowResets() {
+        let previous = snapshot(session: 42, week: 5, resetIn: -1)
+        let new = snapshot(session: 0, week: 0, resetIn: 5)
+        XCTAssertFalse(ZeroReadingGuard.isSuspect(new: new, previous: previous))
+    }
+
+    func testZeroReadingIsAcceptedWithNothingToContradictIt() {
+        let new = snapshot(session: 0, week: 0, resetIn: 5)
+        XCTAssertFalse(ZeroReadingGuard.isSuspect(new: new, previous: UsageSnapshot()))
+        XCTAssertFalse(
+            ZeroReadingGuard.isSuspect(new: new, previous: snapshot(session: 0, week: 0, resetIn: 1))
+        )
+    }
+
+    func testNonZeroReadingIsNeverSuspect() {
+        let previous = snapshot(session: 42, week: 5, resetIn: 1)
+        let new = snapshot(session: 1, week: 0, resetIn: 1)
+        XCTAssertFalse(ZeroReadingGuard.isSuspect(new: new, previous: previous))
+    }
+
     /// Regression: assigning `refreshMinutes` used to self-assign inside its own
     /// `didSet`, which re-enters the `@Published` setter and recurses until the
     /// stack overflows (the SIGSEGV crash on macOS 26). A crash here fails the

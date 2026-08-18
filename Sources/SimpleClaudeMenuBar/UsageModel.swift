@@ -35,9 +35,15 @@ final class UsageModel: ObservableObject {
     /// login, when the app fires its first fetch before the network is up and
     /// `claude -p /usage` comes back with no limit lines. Without this we'd sit
     /// on the error until the next full `refreshMinutes` tick (up to 2 hours).
+    ///
+    /// The ladder is **bounded**: it runs out after ~18 minutes and hands back to
+    /// the regular refresh timer. 0.1.5 repeated the last rung forever, which
+    /// turned a bad stretch into a permanent poll every ~2 minutes — and polling
+    /// `/usage` that hard is itself what makes it answer with nothing, so the
+    /// loop kept itself alive (11 days and 19k CLI sessions, observed Aug 2026).
     private var retryTask: Task<Void, Never>?
     private var retryAttempt = 0
-    private let retryBackoff: [TimeInterval] = [5, 15, 30, 60, 120]
+    private let retryBackoff: [TimeInterval] = [5, 15, 30, 60, 120, 300, 600]
 
     init() {
         let stored = UserDefaults.standard.integer(forKey: Self.intervalKey)
@@ -55,10 +61,15 @@ final class UsageModel: ObservableObject {
         return "…"
     }
 
-    func refresh() async {
+    /// - Parameter resettingRetries: pass `true` for a user-initiated refresh, so
+    ///   an exhausted backoff ladder starts over.
+    func refresh(resettingRetries: Bool = false) async {
         guard !isRefreshing else { return }
         isRefreshing = true
         defer { isRefreshing = false }
+
+        if resettingRetries { clearRetry() }
+        var sawZeroReading = false
 
         // `claude -p /usage` intermittently omits the "Current session/week"
         // limit lines (they come from a server-side fetch that occasionally
@@ -73,7 +84,12 @@ final class UsageModel: ObservableObject {
             switch result {
             case .success(let output):
                 let parsed = UsageParser.parse(output)
-                if parsed.session != nil || parsed.week != nil {
+                if ZeroReadingGuard.isSuspect(new: parsed, previous: snapshot) {
+                    // Both limits came back 0% while a window we know is still
+                    // open had usage in it — a throttled answer. Treat it as a
+                    // miss so we retry, and never overwrite the real numbers.
+                    sawZeroReading = true
+                } else if parsed.session != nil || parsed.week != nil {
                     snapshot = parsed
                     lastUpdated = Date()
                     lastError = nil
@@ -88,6 +104,15 @@ final class UsageModel: ObservableObject {
             }
 
             if attempt == 0 { try? await Task.sleep(nanoseconds: 1_500_000_000) }
+        }
+
+        // A throttled 0/0 reading always leaves a good snapshot in place (that's
+        // what makes it recognisable), so say so and wait for the next scheduled
+        // refresh — retrying on a backoff here is what causes the throttling.
+        if sawZeroReading {
+            lastError = "Claude reported 0% for both limits — a throttled reading. "
+                + "Showing the last good numbers."
+            return
         }
 
         // Both attempts came back without usage limits. Keep showing the last
@@ -106,7 +131,9 @@ final class UsageModel: ObservableObject {
             clearRetry()
             return
         }
-        let delay = retryBackoff[min(retryAttempt, retryBackoff.count - 1)]
+        // Ladder exhausted: stop, and let the refreshMinutes timer take over.
+        guard retryAttempt < retryBackoff.count else { return }
+        let delay = retryBackoff[retryAttempt]
         retryAttempt += 1
         retryTask?.cancel()
         retryTask = Task { [weak self] in
