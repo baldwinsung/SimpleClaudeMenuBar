@@ -14,6 +14,10 @@ A tiny macOS menu bar app that shows your current **Claude Code session usage** 
 Click it for the full breakdown — a Claude-style spark header, plus colored
 gauges for each window:
 
+<p align="center">
+  <img src="docs/screenshot.png" alt="SimpleClaudeMenuBar dropdown showing session and week usage gauges, refresh interval, and launch-at-login" width="291">
+</p>
+
 - **Session** — % used, a progress bar, and reset time
 - **Week** — % used, a progress bar, and reset time (all models)
 - Last updated, refresh interval (1/5/10/15/30 min), manual refresh, quit
@@ -102,6 +106,7 @@ scripts/
   release.sh         Sign (Developer ID) → notarize → staple → zip
   make-icon.sh       Render the app icon
 Casks/               Homebrew cask (mirrored into baldwinsung/homebrew-tap)
+docs/                Screenshot + release verification notes
 ```
 
 ## Releasing (maintainers)
