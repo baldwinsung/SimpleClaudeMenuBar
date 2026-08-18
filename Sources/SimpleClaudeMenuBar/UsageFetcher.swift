@@ -119,6 +119,12 @@ enum UsageFetcher {
         let existing = env["PATH"].map { [$0] } ?? []
         env["PATH"] = (extras + existing).joined(separator: ":")
         env["HOME"] = FileManager.default.homeDirectoryForCurrentUser.path
+        // `claude -p /usage` silently drops the "Current session"/"Current week"
+        // lines — printing only its cost summary — when USER is missing from the
+        // environment. launchd normally provides it, but pin it so the app can't
+        // inherit an environment that quietly breaks the fetch.
+        env["USER"] = NSUserName()
+        env["LOGNAME"] = NSUserName()
         return env
     }
 }

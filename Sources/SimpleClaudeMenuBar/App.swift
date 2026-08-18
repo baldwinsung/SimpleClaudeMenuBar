@@ -69,7 +69,7 @@ struct MenuContent: View {
 
             HStack {
                 Button(model.isRefreshing ? "Refreshing…" : "Refresh now") {
-                    Task { await model.refresh() }
+                    Task { await model.refresh(resettingRetries: true) }
                 }
                 .disabled(model.isRefreshing)
                 Spacer()
