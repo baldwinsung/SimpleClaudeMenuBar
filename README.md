@@ -88,6 +88,14 @@ open build/SimpleClaudeMenuBar.app
 scripts/make-icon.sh             # (re)generate Resources/AppIcon.icns
 ```
 
+To build and install straight into `/Applications` on your own Mac (ad-hoc
+signs, quits any running instance, and strips the quarantine attribute so it
+launches without a Gatekeeper prompt):
+
+```sh
+scripts/install.sh 0.1.0
+```
+
 ## Project layout
 
 ```
@@ -103,7 +111,9 @@ Resources/
   AppIcon.icns       Generated app icon
 scripts/
   build-app.sh       Build + assemble the universal .app
+  install.sh         Build + install locally to /Applications, strip quarantine
   release.sh         Sign (Developer ID) → notarize → staple → zip
+  release-unsigned.sh  Build + ad-hoc sign + zip for an unsigned GitHub release
   make-icon.sh       Render the app icon
 Casks/               Homebrew cask (mirrored into baldwinsung/homebrew-tap)
 docs/                Screenshot + release verification notes
