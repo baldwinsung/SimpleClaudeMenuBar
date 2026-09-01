@@ -2,6 +2,12 @@
 
 All notable changes to SimpleClaudeMenuBar are documented here.
 
+## 0.1.7
+
+- Add `scripts/install.sh` — builds, ad-hoc signs, installs to
+  `/Applications`, and strips the quarantine attribute in one step, for
+  local dev installs without a manual `xattr` command.
+
 ## 0.1.6
 
 - Fix the menu bar getting **stuck on "0% used"**. When `claude -p /usage` is
