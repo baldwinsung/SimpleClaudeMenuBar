@@ -69,13 +69,15 @@ only in the menu bar (no Dock icon).
 ### Unsigned builds
 
 Releases are currently **not notarized** (no Apple Developer ID yet), so on
-first launch macOS may say the app "cannot be opened." Open it once via either:
+first launch macOS may say the app "cannot be opened." Open it via either:
 
 - Right-click the app in `/Applications` ▸ **Open** ▸ confirm, or
 - `xattr -dr com.apple.quarantine "/Applications/SimpleClaudeMenuBar.app"`
 
-After that it launches normally. (Notarization will remove this step; see
-`scripts/release.sh`.)
+Each release is ad-hoc signed with a fresh identity, so this isn't a
+one-time fix — `brew upgrade` re-quarantines the app on every new release,
+so expect to repeat this after each upgrade too. (Notarization will remove
+this step entirely; see `scripts/release.sh`.)
 
 ## Build from source
 

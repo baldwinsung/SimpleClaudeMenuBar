@@ -20,6 +20,10 @@ cask "simpleclaudemenubar" do
       • Run:
           xattr -dr com.apple.quarantine "/Applications/SimpleClaudeMenuBar.app"
 
+    Each release is ad-hoc signed with a fresh identity, so this isn't a
+    one-time step — expect "signer changed" and a re-quarantine on every
+    `brew upgrade`, requiring the same fix again.
+
     It also requires the `claude` CLI on your PATH.
   EOS
 
